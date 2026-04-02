@@ -8,3 +8,48 @@ services:
     volumes:
       - ./site:/usr/share/nginx/html:ro
     restart: always
+
+  db:
+    image: mariadb:10.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=change_me_root_password
+      - MYSQL_DATABASE=snipeit
+      - MYSQL_USER=snipeit_user
+      - MYSQL_PASSWORD=snipeit_password
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "snipeit_user", "-psnipeit_password"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: always
+
+  snipe-it:
+    image: snipe/snipe-it:latest
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=http://localhost:8080
+      - APP_KEY=base64:1u9pZGFWs8oQmk9VKSNloKajfeun/sEnk4VRcBpv1zo=
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=snipeit
+      - DB_USERNAME=snipeit_user
+      - DB_PASSWORD=snipeit_password
+      - MYSQL_ROOT_PASSWORD=change_me_root_password
+      - TZ=UTC
+    ports:
+      - "8080:80"
+    volumes:
+      - snipeit_data:/var/lib/snipeit
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+volumes:
+  db_data:
+  snipeit_data:
